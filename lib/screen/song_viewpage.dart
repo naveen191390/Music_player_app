@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:music_player_app/model/recently_model.dart';
+import 'package:on_audio_query/on_audio_query.dart';
 
 class SongFlowPage extends StatefulWidget {
-  final List<Songmodel> songs;
+  final List<SongModel> songs; // ✅ changed
   const SongFlowPage({super.key, required this.songs});
 
   @override
@@ -12,7 +12,8 @@ class SongFlowPage extends StatefulWidget {
 
 class _SongFlowPageState extends State<SongFlowPage> {
   final PageController _pageController = PageController(viewportFraction: 0.6);
-  final player = AudioPlayer();
+  final AudioPlayer player = AudioPlayer();
+
   int currentIndex = 0;
 
   @override
@@ -21,10 +22,25 @@ class _SongFlowPageState extends State<SongFlowPage> {
     _playSong(0);
   }
 
+  // ✅ play from device path
   Future<void> _playSong(int index) async {
-    await player.setAsset(widget.songs[index].audiourl);
-    player.play();
-    setState(() => currentIndex = index);
+    final song = widget.songs[index];
+
+    try {
+      await player.setFilePath(song.data); // 🔥 device path
+      player.play();
+
+      setState(() => currentIndex = index);
+    } catch (e) {
+      debugPrint("Error playing song: $e");
+    }
+  }
+
+  @override
+  void dispose() {
+    player.dispose();
+    _pageController.dispose();
+    super.dispose();
   }
 
   @override
@@ -34,6 +50,7 @@ class _SongFlowPageState extends State<SongFlowPage> {
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          // 🎵 3D Song Slider
           Expanded(
             child: PageView.builder(
               controller: _pageController,
@@ -48,6 +65,7 @@ class _SongFlowPageState extends State<SongFlowPage> {
                       value = _pageController.page! - index;
                       value = (value).clamp(-1, 1);
                     }
+
                     final double scale = 1 - (value.abs() * 0.3);
                     final double angle = value * 0.5;
 
@@ -60,13 +78,23 @@ class _SongFlowPageState extends State<SongFlowPage> {
                       child: child,
                     );
                   },
+
+                  // ✅ Artwork instead of asset image
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(20),
-                      child: Image.asset(
-                        widget.songs[index].imageurl,
-                        fit: BoxFit.cover,
+                      child: QueryArtworkWidget(
+                        id: widget.songs[index].id,
+                        type: ArtworkType.AUDIO,
+                        nullArtworkWidget: Container(
+                          color: Colors.grey[900],
+                          child: const Icon(
+                            Icons.music_note,
+                            color: Colors.white,
+                            size: 50,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -75,21 +103,29 @@ class _SongFlowPageState extends State<SongFlowPage> {
             ),
           ),
 
-          // Mini player bar
+          // 🎧 Mini Player
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: Image.asset(
-                    widget.songs[currentIndex].imageurl,
-                    width: 50,
-                    height: 50,
-                    fit: BoxFit.cover,
+                  child: QueryArtworkWidget(
+                    id: widget.songs[currentIndex].id,
+                    type: ArtworkType.AUDIO,
+                    artworkWidth: 50,
+                    artworkHeight: 50,
+                    nullArtworkWidget: Container(
+                      width: 50,
+                      height: 50,
+                      color: Colors.grey[900],
+                      child: const Icon(Icons.music_note, color: Colors.white),
+                    ),
                   ),
                 ),
+
                 const SizedBox(width: 10),
+
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,17 +133,27 @@ class _SongFlowPageState extends State<SongFlowPage> {
                       Text(
                         widget.songs[currentIndex].title,
                         style: const TextStyle(color: Colors.white),
+                        overflow: TextOverflow.ellipsis,
                       ),
                       Text(
-                        widget.songs[currentIndex].artist,
+                        widget.songs[currentIndex].artist ?? "Unknown",
                         style: const TextStyle(color: Colors.white54),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
+
+                // ▶️ Play / Pause
                 IconButton(
                   icon: const Icon(Icons.pause, color: Colors.white),
-                  onPressed: () => player.pause(),
+                  onPressed: () {
+                    if (player.playing) {
+                      player.pause();
+                    } else {
+                      player.play();
+                    }
+                  },
                 ),
               ],
             ),

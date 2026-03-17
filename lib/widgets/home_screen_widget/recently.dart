@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:music_player_app/provider/recently_provider.dart';
+import 'package:on_audio_query/on_audio_query.dart';
 import 'package:music_player_app/widgets/home_screen_widget/music_player.dart';
-import 'package:provider/provider.dart';
 
 class RecentlyPlayed extends StatelessWidget {
-  const RecentlyPlayed({super.key});
+  final List<SongModel> songs;
+
+  const RecentlyPlayed({super.key, required this.songs});
 
   @override
   Widget build(BuildContext context) {
-    final songProvider = Provider.of<AlbumProvider>(context);
     final screenWidth = MediaQuery.of(context).size.width;
     final itemWidth = (screenWidth - 60) / 2;
     final itemHeight = itemWidth + 40;
@@ -23,7 +23,7 @@ class RecentlyPlayed extends StatelessWidget {
           const SizedBox(height: 7),
 
           GridView.builder(
-            itemCount: songProvider.albums.length,
+            itemCount: songs.length,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -33,37 +33,42 @@ class RecentlyPlayed extends StatelessWidget {
               mainAxisExtent: itemHeight,
             ),
             itemBuilder: (context, index) {
-              final song = songProvider.albums[index];
+              final song = songs[index];
+
               return GestureDetector(
                 onTap: () {
-                  songProvider.addToRecently(song);
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (index) => MusicPlayerScreeneiii(
-                        title: song.title,
-                        artist: song.artist,
-                        imageUrl: song.imageurl,
-                        audioUrl: song.audiourl,
-                      ),
+                      builder: (_) =>
+                          MusicPlayerScreeneiii(songs: songs, index: index),
                     ),
                   );
                 },
+
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(15),
-                        child: Image.asset(
-                          song.imageurl,
-                          width: itemWidth,
-                          height: itemWidth,
-                          fit: BoxFit.cover,
+                        child: QueryArtworkWidget(
+                          id: song.id,
+                          type: ArtworkType.AUDIO,
+                          nullArtworkWidget: Container(
+                            color: Colors.grey[900],
+                            child: const Icon(
+                              Icons.music_note,
+                              color: Colors.white,
+                              size: 40,
+                            ),
+                          ),
                         ),
                       ),
                     ),
+
                     const SizedBox(height: 8),
+
                     Text(
                       song.title,
                       style: const TextStyle(
@@ -73,8 +78,9 @@ class RecentlyPlayed extends StatelessWidget {
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
+
                     Text(
-                      song.artist,
+                      song.artist ?? "Unknown",
                       style: TextStyle(
                         color: Colors.grey.shade400,
                         fontSize: 13,

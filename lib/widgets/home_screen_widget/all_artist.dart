@@ -1,14 +1,46 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:music_player_app/provider/atist_provider.dart';
 import 'dart:ui';
+import 'package:on_audio_query/on_audio_query.dart';
 
-class AllArtistScreen extends StatelessWidget {
+class AllArtistScreen extends StatefulWidget {
   const AllArtistScreen({super.key});
 
   @override
+  State<AllArtistScreen> createState() => _AllArtistScreenState();
+}
+
+class _AllArtistScreenState extends State<AllArtistScreen> {
+  final OnAudioQuery _audioQuery = OnAudioQuery();
+  List<ArtistModel> artists = [];
+
+  @override
+  void initState() {
+    super.initState();
+    requestPermission();
+  }
+
+  Future<void> requestPermission() async {
+    bool permissionStatus = await _audioQuery.permissionsStatus();
+
+    if (!permissionStatus) {
+      permissionStatus = await _audioQuery.permissionsRequest();
+    }
+
+    if (permissionStatus) {
+      loadArtists();
+    }
+  }
+
+  Future<void> loadArtists() async {
+    final fetchedArtists = await _audioQuery.queryArtists();
+
+    setState(() {
+      artists = fetchedArtists;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final artistProvider = Provider.of<ArtistProvider>(context);
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
@@ -27,80 +59,22 @@ class AllArtistScreen extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Container(
-                        width: 45,
-                        height: 45,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(15),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.2),
-                            width: 1,
-                          ),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(15),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                            child: Container(
-                              color: Colors.white.withOpacity(0.1),
-                              child: IconButton(
-                                padding: EdgeInsets.zero,
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                },
-                                icon: const Icon(
-                                  Icons.arrow_back_ios_new_rounded,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+                      _backButton(context),
+
                       const SizedBox(width: 15),
-                      Expanded(
+
+                      const Expanded(
                         child: Text(
                           'All Artists',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
                           ),
                         ),
                       ),
 
-                      Container(
-                        width: 45,
-                        height: 45,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(15),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.2),
-                            width: 1,
-                          ),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(15),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                            child: Container(
-                              color: Colors.white.withOpacity(0.1),
-                              child: Center(
-                                child: Text(
-                                  '${artistProvider.artlists.length}',
-                                  style: const TextStyle(
-                                    color: Colors.lightGreenAccent,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+                      _countBox(artists.length),
                     ],
                   ),
                 ),
@@ -108,27 +82,8 @@ class AllArtistScreen extends StatelessWidget {
                 const SizedBox(height: 10),
 
                 Expanded(
-                  child: artistProvider.artlists.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.person_outline_rounded,
-                                size: 80,
-                                color: Colors.white.withOpacity(0.3),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'No Artists Found',
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.5),
-                                  fontSize: 18,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
+                  child: artists.isEmpty
+                      ? _emptyState()
                       : GridView.builder(
                           padding: EdgeInsets.symmetric(
                             horizontal: size.width * 0.04,
@@ -141,9 +96,9 @@ class AllArtistScreen extends StatelessWidget {
                                 mainAxisSpacing: 15,
                                 childAspectRatio: 0.85,
                               ),
-                          itemCount: artistProvider.artlists.length,
+                          itemCount: artists.length,
                           itemBuilder: (context, index) {
-                            final artist = artistProvider.artlists[index];
+                            final artist = artists[index];
                             return _ArtistCard(artist: artist, index: index);
                           },
                         ),
@@ -155,10 +110,79 @@ class AllArtistScreen extends StatelessWidget {
       ),
     );
   }
+
+  Widget _backButton(BuildContext context) {
+    return Container(
+      width: 45,
+      height: 45,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(15),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _countBox(int count) {
+    return Container(
+      width: 45,
+      height: 45,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
+      ),
+      child: Center(
+        child: Text(
+          '$count',
+          style: const TextStyle(
+            color: Colors.lightGreenAccent,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _emptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.person_outline_rounded,
+            size: 80,
+            color: Colors.white.withOpacity(0.3),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No Artists Found',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.5),
+              fontSize: 18,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
+// 🎨 Artist Card (UI SAME, data changed)
 class _ArtistCard extends StatefulWidget {
-  final dynamic artist;
+  final ArtistModel artist;
   final int index;
 
   const _ArtistCard({required this.artist, required this.index});
@@ -179,6 +203,7 @@ class _ArtistCardState extends State<_ArtistCard>
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
+
     _scaleAnimation = Tween<double>(
       begin: 1.0,
       end: 0.95,
@@ -194,136 +219,51 @@ class _ArtistCardState extends State<_ArtistCard>
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) {
-        _controller.forward();
-      },
-      onTapUp: (_) {
-        _controller.reverse();
-      },
-      onTapCancel: () {
-        _controller.reverse();
-      },
+      onTapDown: (_) => _controller.forward(),
+      onTapUp: (_) => _controller.reverse(),
+      onTapCancel: () => _controller.reverse(),
       child: ScaleTransition(
         scale: _scaleAnimation,
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withOpacity(0.15), width: 1),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white.withOpacity(0.05),
-                Colors.white.withOpacity(0.02),
-              ],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.white.withOpacity(0.1),
-                blurRadius: 20,
-                spreadRadius: 0,
-                offset: const Offset(0, 5),
-              ),
-            ],
+            border: Border.all(color: Colors.white.withOpacity(0.15)),
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Container(
-                          width: 90,
-                          height: 90,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: RadialGradient(
-                              colors: [Colors.transparent, Colors.transparent],
-                            ),
-                          ),
-                        ),
-
-                        Container(
-                          width: 92,
-                          height: 92,
-                          padding: const EdgeInsets.all(5),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.9),
-                              width: 2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                blurRadius: 15,
-                                spreadRadius: 2,
-                              ),
-                            ],
-                          ),
-                          child: ClipOval(
-                            child: Image.asset(
-                              widget.artist.imagepath,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: Colors.grey[800],
-                                  child: Icon(
-                                    Icons.person,
-                                    size: 40,
-                                    color: Colors.white.withOpacity(0.5),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    Text(
-                      widget.artist.name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-
-                    const SizedBox(height: 6),
-
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        color: Colors.white.withOpacity(0.2),
-                      ),
-                      child: Text(
-                        'Artist',
-                        style: TextStyle(
-                          color: Colors.lightGreenAccent.withOpacity(0.9),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircleAvatar(
+                  radius: 45,
+                  child: QueryArtworkWidget(
+                    id: widget.artist.id,
+                    type: ArtworkType.ARTIST,
+                    nullArtworkWidget: const Icon(Icons.person),
+                  ),
                 ),
-              ),
+
+                const SizedBox(height: 16),
+
+                Text(
+                  widget.artist.artist ?? "Unknown",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: 6),
+
+                const Text(
+                  'Artist',
+                  style: TextStyle(
+                    color: Colors.lightGreenAccent,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
             ),
           ),
         ),

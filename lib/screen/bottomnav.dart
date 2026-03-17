@@ -8,15 +8,12 @@ import 'dart:math' as math;
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:file_picker/file_picker.dart';
 
-// ─── Unified song model ───────────────────────────────────────────────────────
-// Normalises both SongModel (on_audio_query) and PlatformFile (file_picker)
-// into one type so libraryy never has to deal with mixed dynamic objects.
 class UnifiedSong {
   final String title;
   final String? artist;
   final String? path;
   final String? uri;
-  final int? duration; // milliseconds
+  final int? duration;
 
   const UnifiedSong({
     required this.title,
@@ -26,7 +23,6 @@ class UnifiedSong {
     this.duration,
   });
 
-  /// Build from on_audio_query SongModel
   factory UnifiedSong.fromSongModel(SongModel song) => UnifiedSong(
     title: song.title,
     artist: song.artist,
