@@ -1,22 +1,27 @@
 import 'package:flutter/material.dart';
 
-class libraryy extends StatefulWidget {
-  const libraryy({super.key});
+class libraryy extends StatelessWidget {
+  final List<dynamic> addedSongs;
 
-  @override
-  State<libraryy> createState() => _libraryyState();
-}
+  const libraryy({super.key, required this.addedSongs});
 
-class _libraryyState extends State<libraryy> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Center(
-        child: Text(
-          'this is library page',
-          style: TextStyle(color: Colors.white),
-        ),
+      body: ListView.builder(
+        itemCount: addedSongs.length,
+        itemBuilder: (context, index) {
+          final song = addedSongs[index];
+
+          return ListTile(
+            leading: const Icon(Icons.music_note, color: Colors.white),
+            title: Text(
+              song.title ?? song.name ?? "Unknown",
+              style: const TextStyle(color: Colors.white),
+            ),
+          );
+        },
       ),
     );
   }

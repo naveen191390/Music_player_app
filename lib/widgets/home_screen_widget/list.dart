@@ -10,11 +10,17 @@ class _ListeeeiState extends State<Listeeei> {
   int selectedIndex = 0;
 
   final List<String> labels = [
-    'All',
-    'Trending',
-    'Suggested',
-    'Artists',
-    'Album',
+    'All Songs',
+    'Favorite',
+    'Recently Played',
+    'Most Played',
+  ];
+
+  final List<String> svgimage = [
+    'images/music.png',
+    'images/heart.png',
+    'images/clock.png',
+    'images/graph.png',
   ];
 
   @override
@@ -52,13 +58,27 @@ class _ListeeeiState extends State<Listeeei> {
                 onPressed: () {
                   setState(() => selectedIndex = index);
                 },
-                child: Text(
-                  labels[index],
-                  style: TextStyle(
-                    color: isSelected ? Colors.black : Colors.white,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    letterSpacing: 0.2,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset(
+                      svgimage[index],
+                      width: 18,
+                      height: 18,
+                      color: isSelected ? Colors.black : Colors.white,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      labels[index],
+                      style: TextStyle(
+                        color: isSelected ? Colors.black : Colors.white,
+                        fontWeight: isSelected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
